@@ -1,0 +1,14 @@
+M_spin = 3/2           # Spin of Metal
+D_aniso = [0,0,5]      # Magneitc anisotropy of Metal
+Temp = 0.3             # Temperature
+B_field = 0            # Magnetic Field
+J_Nc = 3               # Magnetic Exchange between metal and Nc
+Nsites = 1             # Number of spin sites
+J1 = 6                 # Nearest Neighbour exchange when Nsites are greater than 1
+J2  = 0                # second Neighbour exchange when Nsites are greater than 2
+States_DOS = 3         # Number of energy states consider in ploting
+energy = 15            # Energy range for ploting
+contrast = 0.9         # Contrast for ploting and should be between 0 and 1 ideal value is between 0.7 to 0.9
+coeff_Nc = 3           # coupling of nickelocene spin to the metallic tip appex
+coeff_M =  1           # coupling of surface spin to the underlying substrate
+
