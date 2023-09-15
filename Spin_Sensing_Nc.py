@@ -298,7 +298,7 @@ class Nc_sensing:
             plt.title(f"Spin={self.M_spin} D={self.D_aniso} T={self.Temp} B={self.B_field}", size=12)
             plt.imshow(self.d2IdV2,extent=[min(w),max(w),np.min(Jr),np.max(Jr)],vmin=-20, vmax=20 ,aspect='auto')
             plt.savefig(f"Spin={self.M_spin}_D={self.D_aniso}_T={self.Temp}_B={self.B_field}.png",bbox_inches='tight',pad_inches=0.2,dpi=300)
-#        return self.d2IdV2
+        return self.d2IdV2
 
 
 if __name__ == "__main__":
