@@ -1,6 +1,6 @@
 # Nickelocene as Spin Sensor
 
-Download these two files and run the code in the same directory to use the code.
+Download ```Spin_Sensing_Nc.py ``` and ``` parameters.txt``` these two files and run the code in the same directory to use the code.
 
 ``` python3 Spin_sensing_Nc.py parameters.txt ```
 
