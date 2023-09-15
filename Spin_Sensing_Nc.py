@@ -148,7 +148,7 @@ def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M ):
         d2IdV2.append(der_cur)
     return np.real(d2IdV2)
 
-def parameter_print(M_spin, D_aniso, Temp, B_field, J_Nc, Nsites, J1, J2, States_DOS, energy ):
+def parameter_print(M_spin, D_aniso, Temp, B_field, J_Nc, Nsites, J1, J2, States_DOS, energy, coff_Nc, coff_M ):
     header_pr = f"""\n\n\n\t\t\t\t--------\t\t\t\t\t\n
 Input Parameters are :
 Spin of Metal = {M_spin}
@@ -161,6 +161,8 @@ Coupling between nearest neighbour is {J1}
 Coupling with second nearest neighbour is {J2}
 Number of states taken for boltzman distribution {States_DOS}
 Ploting range of energy is {energy}
+Coupling of nickelocene spin to the metallic tip appex is {coff_Nc}
+Coupling of surface spin to the underlying substrate is {coff_M}
 \n\n\t\t\t\t--------\t\t\t\t\t\n\n
 """
     print(header_pr)
@@ -206,7 +208,8 @@ def read_parameters(filename):
         "energy": None,
         "contrast": None,
         "coeff_nc": None,
-        "coeff_m": None
+        "coeff_m": None,
+        "ciclo": None
     }
 
     with open(filename, 'r') as file:
@@ -246,9 +249,10 @@ class Nc_sensing:
         self.J2 = 0
         self.States_DOS = 3
         self.energy = 15
-        self.contrast = 0.6
+        self.contrast = 0.7
         self.coff_Nc = 3 
         self.coff_M  = 1
+        self.ciclo = 0
     
     def Nc_spin_matrix(self):
         Nc_Sx, Nc_Sy, Nc_Sz = Nc_Spin_matrix(self.M_spin, self.Nsites)
@@ -267,14 +271,14 @@ class Nc_sensing:
         return self.S_M
 
     def bulid_Hamil(self):
-        self.H0 = build_Hamil(self.S_Ni, self.S_M, self.D_aniso , self.M_spin, self.Nsites, self.B_field*0.1, self.J1, self.J2)
+        self.H0 = build_Hamil(self.S_Ni, self.S_M, self.D_aniso , self.M_spin, self.Nsites, self.B_field*0.1, self.J1, self.J2, ciclo=self.ciclo)
 
     def check_parameters(self):
         if len(self.D_aniso)<3 or (not isinstance(self.D_aniso, list)) : raise TypeError("D_aniso must be in [] line [0,0,5]")
         if not self.M_spin: raise ValueError("Please give M_spin")
 
     def parameter_print(self):
-        parameter_print(self.M_spin, self.D_aniso, self.Temp, self.B_field, self.J_Nc, self.Nsites, self.J1, self.J2, self.States_DOS, self.energy )
+        parameter_print(self.M_spin, self.D_aniso, self.Temp, self.B_field, self.J_Nc, self.Nsites, self.J1, self.J2, self.States_DOS, self.energy, self.coff_Nc, self.coff_M )
     
     def kernel(self):
         self.check_parameters()
@@ -294,11 +298,13 @@ class Nc_sensing:
             plt.title(f"Spin={self.M_spin} D={self.D_aniso} T={self.Temp} B={self.B_field}", size=12)
             plt.imshow(self.d2IdV2,extent=[min(w),max(w),np.min(Jr),np.max(Jr)],vmin=-20, vmax=20 ,aspect='auto')
             plt.savefig(f"Spin={self.M_spin}_D={self.D_aniso}_T={self.Temp}_B={self.B_field}.png",bbox_inches='tight',pad_inches=0.2,dpi=300)
-        return self.d2IdV2
+#        return self.d2IdV2
 
 
 if __name__ == "__main__":
     my = Nc_sensing()
+    if len(sys.argv) < 2:
+        print("Give parameter file after python file");exit()
     param = read_parameters(sys.argv[1])
     if param["m_spin"]:
         my.M_spin = param["m_spin"]
@@ -326,6 +332,8 @@ if __name__ == "__main__":
         my.coff_Nc = param["coeff_nc"]
     if param["coeff_m"]:
         my.coff_M = param["coeff_m"]
+    if param["ciclo"]:
+        my.ciclo = param["ciclo"]
   
     my.kernel()
     plt.show()
