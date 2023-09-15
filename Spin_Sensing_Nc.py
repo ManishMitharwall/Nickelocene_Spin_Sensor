@@ -43,6 +43,7 @@ def S2_diagonalize(H,S):
     return  svec, sval
 
 def Nc_Spin_matrix(M_spin, Nsites):
+    """Build the spin matrices for Nickelocene"""
     Dim = int(2*M_spin+1)
     Sx1,Sy1,Sz1=pauli_matrices(1)
     for i in range(Nsites):
@@ -57,6 +58,7 @@ def Nc_Spin_matrix(M_spin, Nsites):
     return Nc_Sx, Nc_Sy, Nc_Sz
 
 def M_Spin_matrix(M_spin, Nsites):
+    """Bulid the spin matrices for metal spin"""
     Dim = int(2*M_spin+1)
     Sxm,Sym,Szm=pauli_matrices(M_spin)
     M_Sx = np.zeros((3*Dim**(Nsites), 3*Dim**(Nsites), Nsites))
@@ -86,6 +88,8 @@ def M_Spin_matrix(M_spin, Nsites):
     return M_Sx, M_Sy, M_Sz
 
 def build_Hamil(S_Ni, S_M, D_aniso , M_spin, Nsites, B_field, J1, J2, ciclo = 0):
+    """Build the Hamiltonian when spin matrices are given along with 
+    D of metal and Magnetic filed. """
     Nc_Sx, Nc_Sy, Nc_Sz = S_Ni["Nc_Sx"], S_Ni["Nc_Sy"], S_Ni["Nc_Sz"]
     M_Sx, M_Sy, M_Sz = S_M["M_Sx"], S_M["M_Sy"], S_M["M_Sz"] 
     Dim = int(2*M_spin+1)
@@ -105,6 +109,7 @@ def build_Hamil(S_Ni, S_M, D_aniso , M_spin, Nsites, B_field, J1, J2, ciclo = 0)
     return H0
 
 def boltz_pop(States_DOS, beta, E):
+    """Calculate the boltzman distribution """
     Q = 0
     p = np.zeros((States_DOS))
     for n in range(States_DOS):
@@ -113,6 +118,7 @@ def boltz_pop(States_DOS, beta, E):
     return p / Q
 
 def cal_d2IdV2(States_DOS, E, C, V, p, Share, beta):
+    """Calculate the second derivatve of current with voltage using cotunneling thoery"""
     d2IdV2_num_row = 0*np.array(V[2:])
     for n in range(States_DOS):
         for m in range(len(E)):
@@ -123,6 +129,7 @@ def cal_d2IdV2(States_DOS, E, C, V, p, Share, beta):
     return d2IdV2_num_row
 
 def normalize_data(data):
+    """Normalize the d2Id2V data in range between 0 and 1 for ploting"""
     vmin = np.min(data)
     vmax = np.max(data)
     # Normalize the data to the range [0, 1]
@@ -130,6 +137,8 @@ def normalize_data(data):
     return normalized_data
 
 def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M ):
+    """Used to run the code for coupling between Nc and metal spin 
+    from infinite to the Excahgne coupling between them."""
     Nc_Sx, Nc_Sy, Nc_Sz = S_Ni["Nc_Sx"], S_Ni["Nc_Sy"], S_Ni["Nc_Sz"]
     M_Sx, M_Sy, M_Sz = S_M["M_Sx"], S_M["M_Sy"], S_M["M_Sz"] 
     d2IdV2 = []
@@ -149,6 +158,7 @@ def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M ):
     return np.real(d2IdV2)
 
 def parameter_print(M_spin, D_aniso, Temp, B_field, J_Nc, Nsites, J1, J2, States_DOS, energy, coff_Nc, coff_M ):
+    """Print all the input parameters given to code."""
     header_pr = f"""\n\n\n\t\t\t\t--------\t\t\t\t\t\n
 Input Parameters are :
 Spin of Metal = {M_spin}
@@ -168,7 +178,7 @@ Coupling of surface spin to the underlying substrate is {coff_M}
     print(header_pr)
 
 def read_parameters(filename):
-
+    """Read all the input parameters from the file to run the code."""
     def convert_value(value):
         # Try to convert the value to a float
         try:
