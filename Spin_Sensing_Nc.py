@@ -98,14 +98,20 @@ def build_Hamil(S_Ni, S_M, D_aniso , M_spin, Nsites, B_field, J1, J2, ciclo = 0)
     H0 += B_field * M_Sz[:,:,0]
     H0 += 4*(Nc_Sz@Nc_Sz)
     H0 += B_field * Nc_Sz
+    if isinstance(J1, list):
+        if len(J1)== 1:
+            for i in range(Nsites):
+                J1.append(J1[0])
+    if isinstance(J1,float): J1 = [J1 for x in range(Nsites)]
+
     for site in range(Nsites-1):
-        H0 += J1*( (M_Sx[:,:,site] @ M_Sx[:,:,site+1]) + np.real(M_Sy[:,:,site] @ M_Sy[:,:,site+1]) + (M_Sz[:,:,site] @ M_Sz[:,:,site+1]))
+        H0 += J1[site]*( (M_Sx[:,:,site] @ M_Sx[:,:,site+1]) + np.real(M_Sy[:,:,site] @ M_Sy[:,:,site+1]) + (M_Sz[:,:,site] @ M_Sz[:,:,site+1]))
         H0 += D_aniso[0]*(M_Sx[:,:,site+1] @ M_Sx[:,:,site+1]) + D_aniso[1]*np.real(M_Sy[:,:,site+1] @ M_Sy[:,:,site+1]) + D_aniso[2]*(M_Sz[:,:,site+1] @ M_Sz[:,:,site+1])
         H0 += B_field * M_Sz[:,:,site+1]
         if site+2 < Nsites:
             H0 += J2*( (M_Sx[:,:,site] @ M_Sx[:,:,site+2]) + np.real(M_Sy[:,:,site] @ M_Sy[:,:,site+2]) + (M_Sz[:,:,site] @ M_Sz[:,:,site+2]))
     if ciclo == 1 and Nsites>=3:
-        H0 += J1*( (M_Sx[:,:,0] @ M_Sx[:,:,Nsites-1]) + np.real(M_Sy[:,:,0] @ M_Sy[:,:,Nsites-1]) + (M_Sz[:,:,0] @ M_Sz[:,:,Nsites-1]))
+        H0 += J1[-1]*( (M_Sx[:,:,0] @ M_Sx[:,:,Nsites-1]) + np.real(M_Sy[:,:,0] @ M_Sy[:,:,Nsites-1]) + (M_Sz[:,:,0] @ M_Sz[:,:,Nsites-1]))
     return H0
 
 def boltz_pop(States_DOS, beta, E):
@@ -136,14 +142,17 @@ def normalize_data(data):
     normalized_data = (data - vmin) / (vmax - vmin)
     return normalized_data
 
-def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M ):
+def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M, vary_B, Nc_M_connect):
     """Used to run the code for coupling between Nc and metal spin 
     from infinite to the Excahgne coupling between them."""
     Nc_Sx, Nc_Sy, Nc_Sz = S_Ni["Nc_Sx"], S_Ni["Nc_Sy"], S_Ni["Nc_Sz"]
     M_Sx, M_Sy, M_Sz = S_M["M_Sx"], S_M["M_Sy"], S_M["M_Sz"] 
     d2IdV2 = []
-    for ijr in Jr:
-        H = H0 + ijr * (Nc_Sx@M_Sx[:,:,0] + np.real(Nc_Sy@M_Sy[:,:,0]) + Nc_Sz@M_Sz[:,:,0])
+    Br = np.linspace(0, vary_B, len(Jr))
+    for idx, ijr in enumerate(Jr):
+        H = H0 + ijr * (Nc_Sx@M_Sx[:,:,Nc_M_connect-1] + np.real(Nc_Sy@M_Sy[:,:,Nc_M_connect-1]) + Nc_Sz@M_Sz[:,:,Nc_M_connect-1])
+        if vary_B:
+            H += Br[idx]*Nc_Sz
         E,C=diagonalize(H)
         kb = 0.086173324
         if (Temp < 0.2):
@@ -151,13 +160,13 @@ def run_code(Jr, H0, S_Ni, S_M, Temp, w, States_DOS, coff_Nc, coff_M ):
         else:
             beta = 1/(kb * Temp)
         V = w.copy()
-        Share =   coff_Nc*(Nc_Sx - 1j*Nc_Sy) + coff_M*(M_Sx[:,:,0] - 1j*M_Sy[:,:,0])
+        Share =   coff_Nc*(Nc_Sx - 1j*Nc_Sy) + coff_M*(M_Sx[:,:,Nc_M_connect-1] - 1j*M_Sy[:,:,Nc_M_connect-1])
         p = boltz_pop(States_DOS, beta, E)
         der_cur = cal_d2IdV2(States_DOS, E, C, V, p, Share, beta)
         d2IdV2.append(der_cur)
     return np.real(d2IdV2)
 
-def parameter_print(M_spin, D_aniso, Temp, B_field, J_Nc, Nsites, J1, J2, States_DOS, energy, coff_Nc, coff_M ):
+def parameter_print(M_spin, D_aniso, Temp, B_field, J_Nc, Nsites, J1, J2, States_DOS, energy, coff_Nc, coff_M, Nc_M_connect ):
     """Print all the input parameters given to code."""
     header_pr = f"""\n\n\n\t\t\t\t--------\t\t\t\t\t\n
 Input Parameters are :
@@ -173,6 +182,7 @@ Number of states taken for boltzman distribution {States_DOS}
 Ploting range of energy is {energy}
 Coupling of nickelocene spin to the metallic tip appex is {coff_Nc}
 Coupling of surface spin to the underlying substrate is {coff_M}
+Nc is sensing the Nsite number  {Nc_M_connect}
 \n\n\t\t\t\t--------\t\t\t\t\t\n\n
 """
     print(header_pr)
@@ -219,7 +229,8 @@ def read_parameters(filename):
         "contrast": None,
         "coeff_nc": None,
         "coeff_m": None,
-        "ciclo": None
+        "ciclo": None,
+        "nc_m_connect": None
     }
 
     with open(filename, 'r') as file:
@@ -263,6 +274,8 @@ class Nc_sensing:
         self.coff_Nc = 3 
         self.coff_M  = 1
         self.ciclo = 0
+        self.vary_B = 0
+        self.Nc_M_connect = 1
     
     def Nc_spin_matrix(self):
         Nc_Sx, Nc_Sy, Nc_Sz = Nc_Spin_matrix(self.M_spin, self.Nsites)
@@ -288,7 +301,7 @@ class Nc_sensing:
         if not self.M_spin: raise ValueError("Please give M_spin")
 
     def parameter_print(self):
-        parameter_print(self.M_spin, self.D_aniso, self.Temp, self.B_field, self.J_Nc, self.Nsites, self.J1, self.J2, self.States_DOS, self.energy, self.coff_Nc, self.coff_M )
+        parameter_print(self.M_spin, self.D_aniso, self.Temp, self.B_field, self.J_Nc, self.Nsites, self.J1, self.J2, self.States_DOS, self.energy, self.coff_Nc, self.coff_M, self.Nc_M_connect )
     
     def kernel(self):
         self.check_parameters()
@@ -298,7 +311,7 @@ class Nc_sensing:
         self.bulid_Hamil()
         w = np.arange(-self.energy,self.energy+0.1,0.1)
         Jr = np.linspace(0,self.J_Nc, 100)
-        self.d2IdV2 = run_code(Jr, self.H0, self.S_Ni, self.S_M, self.Temp, w, self.States_DOS, coff_Nc=self.coff_Nc, coff_M=self.coff_M )
+        self.d2IdV2 = run_code(Jr, self.H0, self.S_Ni, self.S_M, self.Temp, w, self.States_DOS, coff_Nc=self.coff_Nc, coff_M=self.coff_M , vary_B=self.vary_B, Nc_M_connect=self.Nc_M_connect)
         if self.contrast:
             datap = normalize_data(self.d2IdV2)
             plt.title(f"Spin={self.M_spin} D={self.D_aniso} T={self.Temp} B={self.B_field}", size=12)
@@ -341,9 +354,11 @@ if __name__ == "__main__":
     if param["coeff_nc"]:
         my.coff_Nc = param["coeff_nc"]
     if param["coeff_m"]:
-        my.coff_M = param["coeff_m"]
+        my.coff_M = float(param["coeff_m"])
     if param["ciclo"]:
-        my.ciclo = param["ciclo"]
+        my.ciclo = int(param["ciclo"])
+    if param["nc_m_connect"]:
+        my.Nc_M_connect = int(param["nc_m_connect"])
   
     my.kernel()
     plt.show()
