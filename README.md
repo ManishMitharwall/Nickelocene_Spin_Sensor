@@ -10,7 +10,7 @@ In the parameter file, you can edit the input parameters.
 All the input parameters are: 
 
 ```
-M_spin = 1/2             # Spin of Metal.
+M_spin = 1             # Spin of Metal.
 D_aniso = [0,0,5]      # Magneitc anisotropy of Metal [D_x, D_y, D_z].
 Temp = 0.2             # Temperature.
 B_field = 0            # Magnetic Field.
@@ -25,7 +25,8 @@ energy = 15            # Energy range for plotting.
 coeff_Nc = 3           # coupling of nickelocene spin to the metallic tip apex.
 coeff_M =  1           # coupling of surface spin to the underlying substrate.
 ciclo = 0              # For many spin sites, if you want to connect the last site to the first site, put 1.
-Nc_M_connect = 1       # Which Nsite you want to scan with Nc.
+Nc_M_connect = 1       # Which Nsite do you want to scan with Nc.
+Jq1  = 0               # Coupling Quadratic term in AKLT model
 
 
 ```
